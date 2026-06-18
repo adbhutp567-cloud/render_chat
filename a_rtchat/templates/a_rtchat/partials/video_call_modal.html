@@ -1,0 +1,79 @@
+<!-- Video Call Modal -->
+<div id="video-call-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4" x-show="videoCallActive" x-cloak>
+    <div class="relative w-full max-w-6xl h-[88vh] overflow-hidden rounded-[2rem] bg-black shadow-2xl ring-1 ring-white/10">
+        <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-black opacity-95"></div>
+
+        <div class="relative h-full">
+            <video id="remote-video" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
+            <div id="remote-loading" class="absolute inset-0 flex items-center justify-center bg-slate-950/80 text-center px-6 text-white">
+                <div>
+                    <div class="mx-auto mb-4 h-20 w-20 rounded-full bg-slate-800/70 flex items-center justify-center text-2xl text-slate-300">📞</div>
+                    <p id="remote-name" class="text-lg font-semibold">Connecting...</p>
+                    <p class="mt-2 text-slate-300">Waiting for the other person to join the call.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute inset-0 bg-black/30"></div>
+
+        <div class="absolute left-6 top-6 text-white">
+            <div class="flex items-center gap-3 mb-2">
+                <div id="call-status-icon" class="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span id="call-status-text" class="text-lg font-semibold">Calling...</span>
+            </div>
+            <div id="call-duration" class="text-slate-300 text-sm">00:00</div>
+        </div>
+
+        <div class="absolute right-6 top-6 w-44 h-60 rounded-[1.5rem] overflow-hidden border border-white/10 bg-slate-950/80 shadow-2xl backdrop-blur-xl">
+            <video id="local-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            <div id="local-loading" class="absolute inset-0 flex items-center justify-center bg-slate-950/80 text-slate-200 text-sm">
+                <p>Your camera is loading...</p>
+            </div>
+        </div>
+
+        <div class="absolute inset-x-0 bottom-0 flex items-center justify-center p-5 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent">
+            <div class="flex items-center gap-4 rounded-full bg-slate-900/80 px-4 py-3 shadow-2xl border border-white/10 backdrop-blur-xl">
+                <button id="toggle-mic" class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800/70 text-white transition hover:bg-slate-700" title="Toggle Microphone">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM11 7H9v6h2V7z"/>
+                    </svg>
+                </button>
+                <button id="toggle-camera" class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800/70 text-white transition hover:bg-slate-700" title="Toggle Camera">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 6a2 2 0 012-2h8a2 2 0 012 2v1l2 2v4l-2 2v1a2 2 0 01-2 2H6a2 2 0 01-2-2v-1l-2-2V8l2-2V6z"/>
+                    </svg>
+                </button>
+                <button id="end-call-btn" class="flex h-16 w-16 items-center justify-center rounded-full bg-red-500 text-white shadow-lg shadow-red-500/20 transition hover:bg-red-600" title="End Call">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.414 2.586a2 2 0 00-2.828 0L7 12.172V9H5v7h7v-2H7.828l9.586-9.586a2 2 0 000-2.828z"/>
+                    </svg>
+                </button>
+                <button id="toggle-screen" class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800/70 text-white transition hover:bg-slate-700" title="Share Screen">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 5a1 1 0 011-1h10a1 1 0 011 1v2h2V5a3 3 0 00-3-3H5a3 3 0 00-3 3v10a3 3 0 003 3h3v-2H5a1 1 0 01-1-1V5zm11 7h-2v3H7v-3H5l5-5 5 5z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Incoming Call Notification -->
+<div id="incoming-call-notification" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4" x-show="incomingCall" x-cloak>
+    <div class="w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-950/95 p-6 shadow-2xl backdrop-blur-xl">
+        <div class="flex flex-col items-center gap-4 text-center text-white relative">
+            <div class="absolute inset-x-0 top-0 flex justify-center -translate-y-1/2">
+                <div class="ring-wave"></div>
+                <div class="relative z-10 h-24 w-24 rounded-full bg-emerald-500/15 border border-emerald-300/20 shadow-lg flex items-center justify-center text-3xl text-emerald-200">📞</div>
+            </div>
+            <div class="mt-16"></div>
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-400">Incoming video call</p>
+            <p id="caller-name" class="text-2xl font-semibold">Incoming call...</p>
+            <p class="text-slate-400">Tap accept to join the call or decline to reject it.</p>
+            <div class="flex w-full items-center justify-between gap-3 pt-3">
+                <button id="decline-call-btn" class="flex-1 rounded-3xl bg-slate-800/85 px-4 py-3 text-white font-semibold hover:bg-slate-700">Decline</button>
+                <button id="accept-call-btn" class="flex-1 rounded-3xl bg-emerald-500 px-4 py-3 text-white font-semibold hover:bg-emerald-400">Accept</button>
+            </div>
+        </div>
+    </div>
+</div>

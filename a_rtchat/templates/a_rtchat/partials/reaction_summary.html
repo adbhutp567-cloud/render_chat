@@ -1,0 +1,35 @@
+<div id="message-{{ message.id }}-reactions" class="flex flex-wrap gap-2 mt-2 text-xs text-gray-300">
+    {% if message.reaction_counts %}
+        {% for emoji, count in message.reaction_counts.items %}
+            <div class="relative">
+                <button type="button" class="reaction-pill rounded-full bg-slate-900 px-3 py-1 text-white" data-emoji="{{ emoji }}">{{ emoji }} {{ count }}</button>
+                <div class="reactors hidden absolute z-10 mt-1 left-0 bg-slate-800 text-white text-xs rounded shadow-lg p-2 max-w-xs">
+                    {% for r in message.reactions.all %}
+                        {% if r.emoji == emoji %}
+                            <div class="py-0.5">{{ r.user.get_full_name|default:r.user.username }}</div>
+                        {% endif %}
+                    {% empty %}
+                        <div class="text-gray-400">No reactors</div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <span class="text-gray-400">No reactions yet</span>
+    {% endif %}
+</div>
+
+<script>
+// Toggle reactor list on pill click (works for mobile and desktop)
+document.addEventListener('click', function(e){
+    var pill = e.target.closest('.reaction-pill');
+    if(!pill) {
+        // click outside - hide all
+        document.querySelectorAll('#message-{{ message.id }}-reactions .reactors').forEach(function(el){ el.classList.add('hidden'); });
+        return;
+    }
+    var container = pill.parentElement;
+    var popup = container.querySelector('.reactors');
+    if(popup){ popup.classList.toggle('hidden'); }
+});
+</script>
