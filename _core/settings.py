@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -83,21 +84,19 @@ INSTALLED_APPS = [
     'django_cleanup.apps.CleanupConfig',
     'channels',
 
+
     # My apps
     'a_home',
     'a_users',
-
+    
     # Third party
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'django_browser_reload',
     'django_htmx',
-    'a_rtchat',
+    'a_rtchat', 
 ]
-
-# FIX: django_browser_reload should only be active in development
-if DEBUG:
-    INSTALLED_APPS += ['django_browser_reload']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -142,30 +141,57 @@ TEMPLATES = [
 ASGI_APPLICATION = '_core.asgi.application'
 
 CHANNEL_LAYERS = {
-    'default': {
+    'default':{
         "BACKEND": "channels.layers.InMemoryChannelLayer",
     }
 }
 
 
+
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 DB_ENGINE = os.environ.get('DJANGO_DB_ENGINE', '').strip()
 DB_NAME = os.environ.get('DJANGO_DB_NAME', '').strip()
 DB_USER = os.environ.get('DJANGO_DB_USER', '').strip()
 DB_PASSWORD = os.environ.get('DJANGO_DB_PASSWORD', '').strip()
 DB_HOST = os.environ.get('DJANGO_DB_HOST', '127.0.0.1').strip()
 DB_PORT = os.environ.get('DJANGO_DB_PORT', '3306').strip()
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+
+DB_OPTIONS = {}
+if DB_ENGINE and 'mysql' in DB_ENGINE.lower():
+    DB_OPTIONS = {
+        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        'charset': 'utf8mb4',
+    }
+
+
+def sanitize_database_url(url: str) -> str:
+    """Remove backend-specific query params that can break DSN parsing."""
+    parsed = urlsplit(url)
+    query_params = parse_qsl(parsed.query, keep_blank_values=True)
+    filtered = [(key, value) for key, value in query_params if key not in ('init_command', 'charset')]
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(filtered), parsed.fragment))
+
 
 if DATABASE_URL:
-    # FIX: Use dj_database_url.parse — no init_command, works with PostgreSQL
+    cleaned_url = sanitize_database_url(DATABASE_URL)
+    database_config = dj_database_url.parse(cleaned_url, conn_max_age=600)
+
+    # Extra safety: strip any remaining backend-specific connection options.
+    if database_config.get('OPTIONS'):
+        database_config['OPTIONS'] = {
+            key: value for key, value in database_config['OPTIONS'].items()
+            if key not in ('init_command', 'charset')
+        }
+        if not database_config['OPTIONS']:
+            database_config.pop('OPTIONS', None)
+
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        'default': database_config
     }
-elif DB_ENGINE and 'mysql' in DB_ENGINE:
-    # MySQL with its required options (local dev only)
+elif DB_ENGINE:
     DATABASES = {
         'default': {
             'ENGINE': DB_ENGINE,
@@ -174,22 +200,7 @@ elif DB_ENGINE and 'mysql' in DB_ENGINE:
             'PASSWORD': DB_PASSWORD,
             'HOST': DB_HOST,
             'PORT': DB_PORT,
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4',
-            },
-        }
-    }
-elif DB_ENGINE:
-    # Other engine (e.g. PostgreSQL via individual env vars)
-    DATABASES = {
-        'default': {
-            'ENGINE': DB_ENGINE,
-            'NAME': DB_NAME,
-            'USER': DB_USER,
-            'PASSWORD': DB_PASSWORD,
-            'HOST': DB_HOST,
-            'PORT': DB_PORT,
+            'OPTIONS': DB_OPTIONS,
         }
     }
 else:
@@ -202,6 +213,7 @@ else:
         }
     else:
         raise ImproperlyConfigured('Set DATABASE_URL or DJANGO_DB_ENGINE in production environment.')
+
 
 
 # Password validation
