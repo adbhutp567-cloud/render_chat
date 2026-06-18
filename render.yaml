@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: chatting
+    env: python
+    buildCommand: ./build.sh
+    startCommand: daphne _core.asgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: _core.settings
+      - key: PYTHON_VERSION
+        value: 3.13.0
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "your-app-name.onrender.com"
+      - key: DJANGO_SECURE_SSL_REDIRECT
+        value: "True"
