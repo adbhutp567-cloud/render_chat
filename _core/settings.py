@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 
+import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,10 +40,16 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', os.environ.get('SECRET_KEY', 'd
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', os.environ.get('DEBUG', 'False')).lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1')).split()
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1')).split() if host.strip()]
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', os.environ.get('CSRF_TRUSTED_ORIGINS', '')).split() if origin.strip()]
 if DEBUG and not CSRF_TRUSTED_ORIGINS:
     CSRF_TRUSTED_ORIGINS = ['https://localhost', 'https://127.0.0.1']
+if RENDER_EXTERNAL_HOSTNAME and f'https://{RENDER_EXTERNAL_HOSTNAME}' not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 # HTTPS / security settings
 SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True' if not DEBUG else 'False').lower() in ('true', '1', 'yes')
@@ -92,6 +99,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -147,26 +155,27 @@ DB_NAME = os.environ.get('DJANGO_DB_NAME', '').strip()
 DB_USER = os.environ.get('DJANGO_DB_USER', '').strip()
 DB_PASSWORD = os.environ.get('DJANGO_DB_PASSWORD', '').strip()
 DB_HOST = os.environ.get('DJANGO_DB_HOST', '127.0.0.1').strip()
-DB_PORT = os.environ.get('DJANGO_DB_PORT', '5432' if DB_ENGINE == 'django.db.backends.postgresql' else '3306').strip()
+DB_PORT = os.environ.get('DJANGO_DB_PORT', '3306').strip()
+DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
 
-if DB_ENGINE:
-    db_config = {
-        'ENGINE': DB_ENGINE,
-        'NAME': DB_NAME or 'chat',
-        'USER': DB_USER or ('postgres' if DB_ENGINE == 'django.db.backends.postgresql' else 'root'),
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
-    }
-
-    if DB_ENGINE == 'django.db.backends.mysql':
-        db_config['OPTIONS'] = {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
-        }
-
+if DATABASE_URL:
     DATABASES = {
-        'default': db_config,
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    }
+elif DB_ENGINE:
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': DB_NAME or 'chat',
+            'USER': DB_USER or 'root',
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': DB_PORT,
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            },
+        }
     }
 else:
     if DEBUG:
@@ -177,7 +186,7 @@ else:
             }
         }
     else:
-        raise ImproperlyConfigured('DJANGO_DB_ENGINE must be set in production environment.')
+        raise ImproperlyConfigured('Set DATABASE_URL or DJANGO_DB_ENGINE in production environment.')
 
 
 
@@ -215,11 +224,21 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [ BASE_DIR / 'static' ]
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media' 
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
