@@ -1,0 +1,70 @@
+{% extends 'layouts/page.html' %}
+{% load rtchat_extras %}
+
+{% block content %}
+
+<img src="{{ profile.avatar }}" class="w-36 h-36 rounded-full object-cover mb-4 mx-auto"  />
+<div class="text-center text-sky-200">
+    <h1>{{ profile.name }}</h1>
+    <div class="text-sky-300 mb-2 -mt-3">@{{ profile.username }}</div>
+    {% if profile.status_active %}
+    <div class="mx-auto mt-2 w-full max-w-md rounded-3xl bg-[#111b21] border border-[#172a33] p-4 text-sm text-sky-200">
+        {% if profile.status_image_url %}
+            <img src="{{ profile.status_image_url }}" alt="Status photo" class="mb-3 h-56 w-full rounded-3xl object-cover">
+        {% endif %}
+        {% if profile.status %}
+            <div>{{ profile.status }}</div>
+        {% endif %}
+        {% if profile.status_updated_at %}
+        <div class="mt-2 text-xs text-sky-300">Updated {{ profile.status_updated_at|date:"M j, Y H:i" }}</div>
+        {% endif %}
+
+        {% if request.user.is_authenticated and request.user != profile %}
+        <div class="mt-4 flex flex-wrap gap-2">
+            <form method="post" action="{% url 'profile-status-react' profile.username %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="emoji" value="❤️">
+                <button type="submit" class="rounded-full bg-[#1b2a33] px-3 py-2 text-white hover:bg-[#24303a] transition {% if '❤️' in user_reacted_emojis %}ring-2 ring-emerald-400{% endif %}">❤️ {{ status_reactions|get_item:"❤️"|default:0 }}</button>
+            </form>
+            <form method="post" action="{% url 'profile-status-react' profile.username %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="emoji" value="👍">
+                <button type="submit" class="rounded-full bg-[#1b2a33] px-3 py-2 text-white hover:bg-[#24303a] transition {% if '👍' in user_reacted_emojis %}ring-2 ring-emerald-400{% endif %}">👍 {{ status_reactions|get_item:"👍"|default:0 }}</button>
+            </form>
+            <form method="post" action="{% url 'profile-status-react' profile.username %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="emoji" value="😂">
+                <button type="submit" class="rounded-full bg-[#1b2a33] px-3 py-2 text-white hover:bg-[#24303a] transition {% if '😂' in user_reacted_emojis %}ring-2 ring-emerald-400{% endif %}">😂 {{ status_reactions|get_item:"😂"|default:0 }}</button>
+            </form>
+            <form method="post" action="{% url 'profile-status-react' profile.username %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="emoji" value="😮">
+                <button type="submit" class="rounded-full bg-[#1b2a33] px-3 py-2 text-white hover:bg-[#24303a] transition {% if '😮' in user_reacted_emojis %}ring-2 ring-emerald-400{% endif %}">😮 {{ status_reactions|get_item:"😮"|default:0 }}</button>
+            </form>
+            <form method="post" action="{% url 'profile-status-react' profile.username %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="emoji" value="😢">
+                <button type="submit" class="rounded-full bg-[#1b2a33] px-3 py-2 text-white hover:bg-[#24303a] transition {% if '😢' in user_reacted_emojis %}ring-2 ring-emerald-400{% endif %}">😢 {{ status_reactions|get_item:"😢"|default:0 }}</button>
+            </form>
+            <form method="post" action="{% url 'profile-status-react' profile.username %}" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="emoji" value="🔥">
+                <button type="submit" class="rounded-full bg-[#1b2a33] px-3 py-2 text-white hover:bg-[#24303a] transition {% if '🔥' in user_reacted_emojis %}ring-2 ring-emerald-400{% endif %}">🔥 {{ status_reactions|get_item:"🔥"|default:0 }}</button>
+            </form>
+        </div>
+        {% elif request.user.is_authenticated and request.user == profile %}
+        <form method="post" action="{% url 'profile-status-delete' %}" class="mt-4 inline">
+            {% csrf_token %}
+            <button type="submit" class="rounded-full bg-red-500 px-4 py-2 text-white hover:bg-red-400 transition">Delete status</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% if request.user.is_authenticated and request.user != profile %}
+        <div class="mt-4">
+            <a href="{% url 'private-chat' profile.username %}" class="inline-block rounded-full bg-emerald-500 px-4 py-2 text-white hover:bg-emerald-600">Message {{ profile.username }}</a>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

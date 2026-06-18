@@ -1,0 +1,116 @@
+{% extends 'layouts/box.html' %}
+
+{% block content %}
+
+{% if onboarding %}
+<h1 class="mb-4 text-sky-200">Complete your Profile</h1>
+{% else %}
+<h1 class="mb-4 text-sky-200">Edit your Profile</h1>
+{% endif %}
+
+<div class="text-center flex flex-col items-center text-sky-200">
+    <img id="avatar" class="w-36 h-36 rounded-full object-cover my-4" src="{{ user.avatar }}" />
+    <div class="text-center max-w-md">
+        <h1 id="displayname">{{ user.displayname|default:"" }}</h1>
+        <div class="text-sky-300 mb-2 -mt-3">@{{ user.username }}</div>
+        <div id="status-preview" class="mt-3 text-sm text-sky-200 max-w-md mx-auto">
+            {% if user.status %}{{ user.status }}{% else %}Your status will appear here when you type it.{% endif %}
+        </div>
+        {% if user.status_image_url %}
+        <div id="current-status-image" class="mt-4">
+            <div class="text-xs text-sky-300 mb-2">Current status photo</div>
+            <img src="{{ user.status_image_url }}" alt="Current status" class="mx-auto h-48 w-full max-w-xs rounded-3xl object-cover">
+        </div>
+        {% endif %}
+        {% if user.status_active %}
+        <form method="post" action="{% url 'profile-status-delete' %}" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="button button-red">Remove status</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+<style>
+    .profile-edit-form input,
+    .profile-edit-form textarea,
+    .profile-edit-form select {
+        color: #7dd3fc;
+    }
+</style>
+<form method="POST" enctype="multipart/form-data" class="profile-edit-form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" >Submit</button>
+    {% if onboarding %}
+    <a class="button button-gray ml-1" href="{% url 'home' %}">Skip</a>
+    {% else %}
+    <a class="button button-gray ml-1" href="{{ request.META.HTTP_REFERER }}">Cancel</a>
+    {% endif %}
+</form>
+
+
+
+
+<script>
+    
+    // This updates the avatar preview when a new avatar file is selected
+    const avatarFileInput = document.getElementById('id_image');
+    if (avatarFileInput) {
+        avatarFileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const image = document.querySelector('#avatar');
+            if (file && file.type.includes('image')) {
+                const url = URL.createObjectURL(file);
+                image.src = url;
+            }
+        });
+    }
+
+    // This updates the name
+    const display_nameInput = document.getElementById('id_displayname');
+    const display_nameOutput = document.getElementById('displayname');
+    const statusInput = document.getElementById('id_status');
+    const statusPreview = document.getElementById('status-preview');
+    const statusImageInput = document.getElementById('id_status_image');
+    const currentStatusImage = document.getElementById('current-status-image');
+
+    display_nameInput.addEventListener('input', (event) => {
+        display_nameOutput.innerText = event.target.value;
+    });
+
+    if (statusInput && statusPreview) {
+        statusInput.addEventListener('input', (event) => {
+            const value = event.target.value.trim();
+            statusPreview.innerText = value || 'Your status will appear here when you type it.';
+        });
+    }
+
+    if (statusImageInput) {
+        statusImageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            const existingPreview = document.getElementById('status-image-preview');
+            const url = URL.createObjectURL(file);
+            if (existingPreview) {
+                existingPreview.src = url;
+            } else {
+                const preview = document.createElement('img');
+                preview.id = 'status-image-preview';
+                preview.src = url;
+                preview.alt = 'Selected status photo';
+                preview.className = 'mx-auto mt-4 h-48 w-full max-w-xs rounded-3xl object-cover';
+                if (currentStatusImage && currentStatusImage.parentNode) {
+                    currentStatusImage.parentNode.insertBefore(preview, currentStatusImage.nextSibling);
+                } else {
+                    const container = document.querySelector('.text-center.max-w-md');
+                    if (container) container.appendChild(preview);
+                }
+            }
+        });
+    }
+
+</script>
+
+{% endblock %}
